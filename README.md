@@ -4,6 +4,16 @@ Converts .mvmelst files to .root files for MADC32. Doesn't work with extended ti
 
 ROOT tree is based on TreeData.h in order to be compatible with data collected with DELILA.
 
+
+install:
+    bash install.sh
+
+run:
+    ./convertor [FILE]
+
+
+
+
 Based on https://github.com/sfinch/mvme2root
 
 
