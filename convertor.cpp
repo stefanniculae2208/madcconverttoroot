@@ -26,6 +26,32 @@ typedef int64_t s64;
 
 
 
+struct listfile_v0
+{
+    static const int Version = 0;
+    static const int FirstSectionOffset = 0;
+
+    static const int SectionMaxWords  = 0xffff;
+    static const int SectionMaxSize   = SectionMaxWords * sizeof(u32);
+
+    static const int SectionTypeMask  = 0xe0000000; // 3 bit section type
+    static const int SectionTypeShift = 29;
+    static const int SectionSizeMask  = 0xffff;    // 16 bit section size in 32 bit words
+    static const int SectionSizeShift = 0;
+    static const int EventTypeMask  = 0xf0000;   // 4 bit event type
+    static const int EventTypeShift = 16;
+
+    // Subevent containing module data
+    static const int ModuleTypeMask  = 0x3f000; // 6 bit module type
+    static const int ModuleTypeShift = 12;
+
+    static const int SubEventMaxWords  = 0x3ff;
+    static const int SubEventMaxSize   = SubEventMaxWords * sizeof(u32);
+    static const int SubEventSizeMask  = 0x3ff; // 10 bit subevent size in 32 bit words
+    static const int SubEventSizeShift = 0;
+};
+
+
 struct listfile_v1
 {
     static const int Version = 1;
@@ -122,7 +148,7 @@ namespace listfile
     }
 
 } // end namespace listfile
-typedef listfile_v1 LF;
+
 
 inline int bitExtractor(int word, int numbits, int position){
     return (((1 << numbits) - 1) & (word >> position)); 
@@ -130,7 +156,7 @@ inline int bitExtractor(int word, int numbits, int position){
 
 
 
-
+template<typename LF>
 void convert_file(std::ifstream &infile, TString filename, TString dir)
 {
 
@@ -208,8 +234,7 @@ void convert_file(std::ifstream &infile, TString filename, TString dir)
                         std::cout << '\r' << "Processing event " << counter<<std::endl;
                     }
 
-                    //rootdata_SCP.initEvent();
-                    //rootdata_QDC.initEvent();
+
 
                     sig = 0;
 
@@ -248,23 +273,7 @@ void convert_file(std::ifstream &infile, TString filename, TString dir)
                             }
                             else{
 
-                                /* if((bitExtractor(subEventData, 2, 30) == 1) && (bitExtractor(subEventData, 6, 24) == 0));
-                                    std::cout<<"Header"<<std::endl;
 
-                                
-                                if((bitExtractor(subEventData, 2, 30) == 0) && (bitExtractor(subEventData, 9, 21) == 32))
-                                    std::cout<<"Sub event is "<<std::bitset<32>(subEventData)<<" at ch "<<bitExtractor(subEventData, 5, 16)
-                                                <<" value "<<bitExtractor(subEventData, 16, 0)<<std::endl;
-
-                                
-
-                                if(bitExtractor(subEventData, 2, 30) == 2)
-                                    std::cout<<"Unknown "<<std::bitset<32>(subEventData)<<std::endl;
-
-
-
-                                if(bitExtractor(subEventData, 2, 30) == 3)
-                                    std::cout<<"Footer"<<std::endl; */
 
                                 sig = bitExtractor(subEventData, 2, 30);
 
@@ -273,6 +282,10 @@ void convert_file(std::ifstream &infile, TString filename, TString dir)
                                     moduleId = bitExtractor(subEventData, 8, 16);
                                 }
                                 if(sig == 0){//data
+
+                                //0 is also for extended time stamp if option is enabled
+                                //This functionality is not yet implemented
+
                                     loc_data.Ch = bitExtractor(subEventData, 5, 16);
                                     loc_data.Mod = moduleId;
                                     loc_data.ChargeLong = bitExtractor(subEventData, 13, 0);
@@ -293,73 +306,6 @@ void convert_file(std::ifstream &infile, TString filename, TString dir)
                             }
 
 
-                            /* else{
-                                //Check for MDPP-16 SCP/RCP
-                                if (moduleType==0) moduleType=4;
-                                if ((moduleType==4)||(moduleType==7)){
-                                    SCPon = 1;
-                                    sig = bitExtractor(subEventData, 4, 28);
-                                    if (sig==4){ //header
-
-
-
-                                    }
-                                    else if (sig==1){//data
-                                        //MDPP16 with SCP or RCP firmware
-                                        chn = bitExtractor(subEventData, 6, 16);
-                                        data = bitExtractor(subEventData, 16, 0);
-                                        rootdata_SCP.setADC(chn, data);
-
-                                        if (chn<16){
-                                            pu = bitExtractor(subEventData, 1, 23);
-                                            ov = bitExtractor(subEventData, 1, 22);
-                                            rootdata_SCP.setPileup(chn, pu);
-                                            rootdata_SCP.setOverflow(chn, ov);
-                                        }
-
-
-                                    }
-                                    else if(sig==2){//extended time stamp
-                                        extended = bitExtractor(subEventData, 16, 0);
-                                        rootdata_SCP.setExtendedTime(extended);
-
-                                    }
-                                    else if(sig>=12){//end of event
-                                        time = bitExtractor(subEventData, 30, 0);
-                                        rootdata_SCP.setTime(time);
-
-                                    }
-                                }
-                                //MDPP16 with QDC
-                                if (moduleType==8){
-                                    QDCon = 1;
-                                    sig = bitExtractor(subEventData, 4, 28);
-                                    if (sig==4){ //header
-
-                                    }
-                                    else if (sig==1){//data
-                                        chn = bitExtractor(subEventData, 6, 16);
-                                        data = bitExtractor(subEventData, 16, 0);
-                                        rootdata_QDC.setADC(chn, data);
-
-                                        if (chn<16){
-                                            ov = bitExtractor(subEventData, 1, 22);
-                                            rootdata_QDC.setOverflow(chn, ov);
-                                        }
-                                        //if ((chn==32)||(chn==33)){
-                                        //    rootdata_QDC.setTrigger(chn%32, data);
-                                        //}
-                                    }
-                                    if(sig==2){//extended time stamp
-                                        extended = bitExtractor(subEventData, 16, 0);
-                                        rootdata_QDC.setExtendedTime(extended);
-                                    }
-                                    else if(sig>=12){//end of event
-                                        time = bitExtractor(subEventData, 30, 0);
-                                        rootdata_QDC.setTime(time);
-                                    }
-                                }
-                            } */
                         }
                         wordsLeft -= subEventSize;
                     }
@@ -369,8 +315,7 @@ void convert_file(std::ifstream &infile, TString filename, TString dir)
 
 
 
-                    //rootdata_QDC.writeEvent();
-                    //rootdata_SCP.writeEvent();
+
                     counter++;
                 } break;
 
@@ -475,18 +420,30 @@ void process_file(std::ifstream &infile, TString filename, TString dir)
 
     std::cout<<"File version "<<fileVersion<<std::endl;
 
-    if(fileVersion != 1){
-        std::cout<<"Error prorgram only works with file version 1!"<<std::endl;
-        exit(EXIT_FAILURE);
-    }
-
     auto firstSectionOffset = listfile_v1::FirstSectionOffset;
 
     infile.seekg(firstSectionOffset, std::ifstream::beg);
 
 
 
-    convert_file(infile, filename, dir);
+    if(fileVersion == 0){
+
+        convert_file<listfile_v0>(infile, filename, dir);
+
+    }else if(fileVersion == 1){
+
+        convert_file<listfile_v1>(infile, filename, dir);
+
+    }else{
+        std::cout<<"Error prorgram only works with file version 0 or 1!"<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+
+
+
+
+    
 
 
 
