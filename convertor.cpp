@@ -435,7 +435,7 @@ void process_file(std::ifstream &infile, TString filename, TString dir)
         convert_file<listfile_v1>(infile, filename, dir);
 
     }else{
-        std::cout<<"Error prorgram only works with file version 0 or 1!"<<std::endl;
+        std::cout<<"Error program only works with file version 0 or 1!"<<std::endl;
         exit(EXIT_FAILURE);
     }
 
