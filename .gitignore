@@ -11,3 +11,4 @@ mvme2root/
 Makefile
 install_manifest.txt
 build/
+testdata/
