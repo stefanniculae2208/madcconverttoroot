@@ -380,8 +380,8 @@ int main(int argc, char *argv[]) {
 
     std::cout << "----- Unzipping file " << dirandfileName.Data() << " -----"
               << std::endl;
-    if (dir.Sizeof() > 1)
-      zipcommand.Append(" -d " + dir + fileName);
+    // if (dir.Sizeof() > 1)
+    zipcommand.Append(" -d " + dir + fileName);
     std::cout << zipcommand.Data() << std::endl;
     gROOT->ProcessLine(zipcommand.Data());
 
