@@ -4,6 +4,8 @@ Converts .mvmelst files to .root files for MADC32. Doesn't work with extended ti
 
 ROOT tree is based on TreeData.h in order to be compatible with data collected with DELILA.
 
+Currently does not function with extended time stamp.
+
 
 install:
     bash install.sh

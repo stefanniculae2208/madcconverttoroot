@@ -231,6 +231,9 @@ void convert_file(std::ifstream &infile, TString filename, TString dir) {
 
           } else {
 
+            // Time stamp high bits for extended time stamp.
+            int ts_hb = 0;
+
             sig = bitExtractor(subEventData, 2, 30);
 
             if (sig == 1) { // header
@@ -241,10 +244,20 @@ void convert_file(std::ifstream &infile, TString filename, TString dir) {
               // 0 is also for extended time stamp if option is enabled
               // This functionality is not yet implemented
 
-              loc_data.Ch = bitExtractor(subEventData, 5, 16);
-              loc_data.Mod = moduleId;
-              loc_data.ChargeLong = bitExtractor(subEventData, 13, 0);
-              madc_data.addEvent(loc_data);
+              // Check to see if amplitude or high bits of extended time stamp.
+              if (bitExtractor(subEventData, 9, 21) == 0b000100000) {
+
+                loc_data.Ch = bitExtractor(subEventData, 5, 16);
+                loc_data.Mod = moduleId;
+                loc_data.ChargeLong = bitExtractor(subEventData, 13, 0);
+                madc_data.addEvent(loc_data);
+              } else if (bitExtractor(subEventData, 9, 21) == 0b000100100) {
+
+                // Only exists if extended time stamp is used.
+                ts_hb = loc_data.ChargeLong = bitExtractor(subEventData, 16, 0);
+
+                std::cout << "High bits: " << ts_hb << "\n";
+              }
 
               /*                                     std::cout<<"Sub event is
                  "<<std::bitset<32>(subEventData)<<" at ch
@@ -255,7 +268,8 @@ void convert_file(std::ifstream &infile, TString filename, TString dir) {
 
             if (sig == 3) {
 
-              madc_data.writeEvent(bitExtractor(subEventData, 30, 0));
+              // The time stamp.
+              madc_data.writeEvent(bitExtractor(subEventData, 30, 0), ts_hb);
             }
           }
         }
